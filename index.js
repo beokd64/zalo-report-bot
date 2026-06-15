@@ -11,7 +11,7 @@ const { submitToGoogleForm } = require("./google/form");
 const { chatComplete } = require("./ai");
 
 const app = express();
-
+const GROUP_ID = process.env.ZALO_GROUP_ID || "group:3421414480936586205";
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

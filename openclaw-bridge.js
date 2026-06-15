@@ -1,6 +1,6 @@
 const express = require("express");
 const { spawn } = require("child_process");
-
+const axios = require("axios");
 const app = express();
 app.use(express.json());
 
@@ -28,7 +28,21 @@ function sendToZalo(text) {
     });
   });
 }
+const RAILWAY_WEBHOOK =
+  "https://zalo-report-bot-production.up.railway.app/webhook";
 
+app.post("/incoming", async (req, res) => {
+  try {
+    console.log("[Incoming from OpenClaw]", JSON.stringify(req.body, null, 2));
+
+    await axios.post(RAILWAY_WEBHOOK, req.body);
+
+    res.status(200).send("OK");
+  } catch (err) {
+    console.error("[Forward to Railway failed]", err.response?.data || err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
 app.post("/send", async (req, res) => {
   try {
     const { text } = req.body;
