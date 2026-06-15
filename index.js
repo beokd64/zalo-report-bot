@@ -16,7 +16,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Root check for Railway / Zalo verification
-app.get("/", (req, res) => {
+app.get("/health", (req, res) => {
   res.status(200).send("Zalo Report Bot is running");
 });
 
