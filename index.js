@@ -11,44 +11,53 @@ const { submitToGoogleForm } = require("./google/form");
 const { chatComplete } = require("./ai");
 
 const app = express();
-const GROUP_ID = process.env.ZALO_GROUP_ID || "group:3421414480936586205";
+
+const GROUP_ID =
+  process.env.ZALO_GROUP_ID || "group:3421414480936586205";
+
+const OPENCLAW_BRIDGE_URL =
+  process.env.OPENCLAW_BRIDGE_URL ||
+  "https://giddy-jittery-starving.ngrok-free.dev";
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Root check for Railway / Zalo verification
 app.get("/health", (req, res) => {
   res.status(200).send("Zalo Report Bot is running");
 });
 
 app.post("/", (req, res) => {
-  console.log("[Zalo Verify POST /]", req.body);
+  console.log("[Root POST]", req.body);
   res.status(200).send("OK");
 });
 
-// Zalo HTML verification file
 app.get("/zalo_verifierPE6T8hdAIpri-TyPjT1B8MlRuYQ7hJTnD3Wq.html", (req, res) => {
   res.sendFile(
-    path.join(process.cwd(), "zalo_verifierPE6T8hdAIpri-TyPjT1B8MlRuYQ7hJTnD3Wq.html")
+    path.join(
+      process.cwd(),
+      "zalo_verifierPE6T8hdAIpri-TyPjT1B8MlRuYQ7hJTnD3Wq.html"
+    )
   );
 });
 
-// Webhook GET check
 app.get("/webhook", (req, res) => {
   res.status(200).send("Webhook OK");
 });
 
 app.use(express.static(path.join(__dirname, "dashboard")));
 
-// ─── OpenClaw / Zalo API helpers ──────────────────────────────────────────────
-const OPENCLAW_BRIDGE = process.env.OPENCLAW_BRIDGE_URL;
-
+// ─── OpenClaw bridge sender ──────────────────────────────────────────────────
 async function sendGroupMessage(text) {
   try {
-    const res = await axios.post(`${OPENCLAW_BRIDGE}/send`, {
-      text
+    if (!OPENCLAW_BRIDGE_URL) {
+      throw new Error("Missing OPENCLAW_BRIDGE_URL");
+    }
+
+    const res = await axios.post(`${OPENCLAW_BRIDGE_URL}/send`, {
+      text,
     });
 
-    console.log("[OpenClaw] Sent:", res.data);
+    console.log("[OpenClaw] Message sent:", res.data);
     return res.data;
   } catch (err) {
     console.error("[OpenClaw] Send error:", err.response?.data || err.message);
@@ -59,38 +68,42 @@ async function sendReportRequest() {
   const week = getWeekLabel();
 
   const msg =
-    `📋 *Weekly Report Request – ${week}*\n\n` +
+    `📋 Weekly Report Request – ${week}\n\n` +
     `Hi team! Please submit your project update for this week.\n\n` +
     `Reply with:\n` +
-    `• *Project name*\n` +
-    `• *Progress this week*\n` +
-    `• *Blockers / issues*\n` +
-    `• *Plan for next week*\n\n` +
-    `Deadline: *Friday 5 PM*. You can also attach files directly here. 🚀`;
+    `• Project name\n` +
+    `• Progress this week\n` +
+    `• Blockers / issues\n` +
+    `• Plan for next week\n\n` +
+    `Deadline: Friday 5 PM. You can also attach files directly here. 🚀`;
 
   await sendGroupMessage(msg);
   store.startCollection(week);
+
   console.log(`[Bot] Weekly report request sent for ${week}`);
 }
 
 // ─── Incoming webhook ────────────────────────────────────────────────────────
 app.post("/webhook", async (req, res) => {
-console.log("========== WEBHOOK ==========");
-console.log(JSON.stringify(req.body, null, 2));
-console.log("=============================");
-
-  console.log("[Webhook Event]", JSON.stringify(req.body, null, 2));
+  console.log("========== WEBHOOK ==========");
+  console.log(JSON.stringify(req.body, null, 2));
+  console.log("=============================");
 
   res.sendStatus(200);
 
   const event = req.body;
   if (!event) return;
 
-  const sender = event.sender || event.user;
-const message = event.message || {};
-const group_id = event.group_id || event.group;
+  const sender = event.sender || event.user || {};
+  const message = event.message || {};
+  const group_id =
+    event.group_id ||
+    event.groupId ||
+    event.threadId ||
+    event.group ||
+    event.rawEvent?.threadId;
 
-  if (GROUP_ID && group_id !== GROUP_ID) {
+  if (GROUP_ID && group_id && group_id !== GROUP_ID) {
     console.log(`[Webhook] Ignored group_id: ${group_id}`);
     return;
   }
@@ -100,25 +113,58 @@ const group_id = event.group_id || event.group;
     return;
   }
 
-  const userId = sender?.id;
-  const userName = sender?.display_name || `User_${userId}`;
-  const text = message?.text || "";
-  const attachments = message?.attachments || [];
+  const userId =
+    sender.id ||
+    sender.userId ||
+    event.senderId ||
+    event.userId ||
+    "unknown-user";
 
-  if (!userId) {
-    console.log("[Webhook] Missing sender id");
-    return;
-  }
+  const userName =
+    sender.display_name ||
+    sender.displayName ||
+    sender.name ||
+    event.senderName ||
+    `User_${userId}`;
 
-  if (event.event_name === "user_send_text" && text) {
-    store.addMessage({ userId, userName, text, timestamp: Date.now() });
-    console.log(`[Webhook] ${userName}: ${text.slice(0, 60)}`);
+  const text =
+    message.text ||
+    event.text ||
+    event.content ||
+    event.messageText ||
+    "";
+
+  const attachments =
+    message.attachments ||
+    event.attachments ||
+    event.metadata?.attachments ||
+    event.rawEvent?.attachments ||
+    [];
+
+  if (text) {
+    store.addMessage({
+      userId,
+      userName,
+      text,
+      timestamp: Date.now(),
+    });
+
+    console.log(`[Webhook] ${userName}: ${text.slice(0, 80)}`);
     store.queueSubmission(userId, userName);
   }
 
   for (const att of attachments) {
-    const fileUrl = att?.payload?.url;
-    const fileName = att?.payload?.name || `file_${Date.now()}`;
+    const fileUrl =
+      att?.payload?.url ||
+      att?.url ||
+      att?.downloadUrl ||
+      att?.fileUrl;
+
+    const fileName =
+      att?.payload?.name ||
+      att?.name ||
+      att?.filename ||
+      `file_${Date.now()}`;
 
     if (fileUrl) {
       store.addFile({
@@ -132,6 +178,11 @@ const group_id = event.group_id || event.group;
       console.log(`[Webhook] File from ${userName}: ${fileName}`);
       store.queueSubmission(userId, userName);
     }
+  }
+
+  if (!text && attachments.length === 0) {
+    console.log("[Webhook] No text or attachments found");
+    return;
   }
 
   scheduleProcessing(userId, userName);
@@ -157,12 +208,19 @@ function scheduleProcessing(userId, userName) {
 
 // ─── Process submission ──────────────────────────────────────────────────────
 async function processSubmission({ userId, userName }) {
-  if (store.hasSubmitted(userId)) return;
+  if (store.hasSubmitted(userId)) {
+    console.log(`[Bot] ${userName} already submitted this week`);
+    return;
+  }
 
   console.log(`[Bot] Processing submission from ${userName}`);
 
   const userMessages = store.getUserMessages(userId);
-  const reportText = userMessages.map((m) => m.text).filter(Boolean).join("\n");
+  const reportText = userMessages
+    .map((m) => m.text)
+    .filter(Boolean)
+    .join("\n");
+
   const userFiles = store.getUserFiles(userId);
 
   const fileLinks = [];
@@ -181,7 +239,13 @@ async function processSubmission({ userId, userName }) {
     }
   }
 
-  const aiNotes = await analyzeReport(userName, reportText, userMessages, fileLinks);
+  const aiNotes = await analyzeReport(
+    userName,
+    reportText,
+    userMessages,
+    fileLinks
+  );
+
   const week = store.getCurrentWeek();
 
   try {
@@ -202,7 +266,7 @@ async function processSubmission({ userId, userName }) {
   store.markSubmitted(userId, userName);
 
   await sendGroupMessage(
-    `✅ Thanks *${userName}*! Your weekly report has been received and submitted. 📁`
+    `✅ Thanks ${userName}! Your weekly report has been received and submitted. 📁`
   );
 }
 
@@ -267,7 +331,10 @@ app.get("/api/status", (req, res) => {
 
 app.post("/api/trigger", async (req, res) => {
   await sendReportRequest();
-  res.json({ ok: true, message: "Report request sent manually." });
+  res.json({
+    ok: true,
+    message: "Report request sent manually.",
+  });
 });
 
 app.post("/api/schedule", (req, res) => {
