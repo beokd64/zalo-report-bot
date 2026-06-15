@@ -57,7 +57,6 @@ async function sendReportRequest() {
 
 // ─── Incoming webhook (OpenClaw forwards Zalo events here) ────────────────────
 // Handles both text messages AND file attachments from the same event stream.
-console.log("EVENT:", JSON.stringify(req.body));
 app.post("/webhook", async (req, res) => {
   res.sendStatus(200);
   const event = req.body;
