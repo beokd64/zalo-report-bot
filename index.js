@@ -46,19 +46,18 @@ const GROUP_ID = process.env.ZALO_GROUP_ID;
 
 async function sendGroupMessage(text) {
   try {
-    const res = await axios.post(
-      `${ZALO_API}/message/cs`,
-      {
-        recipient: { group_id: GROUP_ID },
-        message: { text },
-      },
-      { headers: { access_token: OA_TOKEN } }
-    );
+    const bridgeUrl = process.env.OPENCLAW_BRIDGE_URL;
 
-    console.log("[Zalo] Message sent:", res.data);
+    if (!bridgeUrl) {
+      throw new Error("Missing OPENCLAW_BRIDGE_URL");
+    }
+
+    const res = await axios.post(`${bridgeUrl}/send`, { text });
+
+    console.log("[OpenClaw] Message sent:", res.data);
     return res.data;
   } catch (err) {
-    console.error("[Zalo] Send error:", err.response?.data || err.message);
+    console.error("[OpenClaw] Send error:", err.response?.data || err.message);
   }
 }
 
