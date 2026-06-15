@@ -1,3 +1,4 @@
+import path from "path";
 require("dotenv").config();
 const express = require("express");
 const cron = require("node-cron");
@@ -9,6 +10,9 @@ const { submitToGoogleForm } = require("./google/form");
 const { chatComplete } = require("./ai");
 
 const app = express();
+app.get("/zalo_verifierPE6T8hdAIpri-TyPjT1B8MlRuYQ7hJTnD3Wq.html", (req, res) => {
+  res.sendFile(path.join(process.cwd(), "zalo_verifierPE6T8hdAIpri-TyPjT1B8MlRuYQ7hJTnD3Wq.html"));
+});
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, "dashboard")));
