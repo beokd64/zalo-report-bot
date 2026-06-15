@@ -53,7 +53,7 @@ async function sendGroupMessage(text) {
   } catch (err) {
     console.error("[OpenClaw] Send error:", err.response?.data || err.message);
   }
-}}
+}
 
 async function sendReportRequest() {
   const week = getWeekLabel();
