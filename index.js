@@ -82,6 +82,10 @@ async function sendReportRequest() {
 
 // ─── Incoming webhook ────────────────────────────────────────────────────────
 app.post("/webhook", async (req, res) => {
+console.log("========== WEBHOOK ==========");
+console.log(JSON.stringify(req.body, null, 2));
+console.log("=============================");
+
   console.log("[Webhook Event]", JSON.stringify(req.body, null, 2));
 
   res.sendStatus(200);
