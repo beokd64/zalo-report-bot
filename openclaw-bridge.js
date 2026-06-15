@@ -4,79 +4,41 @@ const { spawn } = require("child_process");
 const app = express();
 app.use(express.json());
 
-const OPENCLAW_PS1 =
-"C:\Users\Admin\AppData\Roaming\npm\openclaw.ps1";
-
 const GROUP_ID = process.env.ZALO_GROUP_ID;
 
-app.post("/send", (req, res) => {
-const text = req.body.text;
+// IMPORTANT: use your real OpenClaw command here
+function sendToZalo(text) {
+  return new Promise((resolve, reject) => {
+    const child = spawn("powershell.exe", [
+      "-ExecutionPolicy",
+      "Bypass",
+      "-Command",
+      `openclaw message send --channel zalouser --target ${GROUP_ID} --message "${text}"`
+    ]);
 
-if (!text) {
-return res.status(400).json({
-error: "Missing text",
-});
-}
+    let output = "";
+    let error = "";
 
-console.log("[Bridge] Sending:", text);
+    child.stdout.on("data", d => output += d.toString());
+    child.stderr.on("data", d => error += d.toString());
 
-const child = spawn(
-"powershell.exe",
-[
-"-ExecutionPolicy",
-"Bypass",
-"-File",
-OPENCLAW_PS1,
-"message",
-"send",
-"--channel",
-"zalouser",
-"--target",
-GROUP_ID,
-"--message",
-text,
-],
-{
-shell: true,
-}
-);
-
-let stdout = "";
-let stderr = "";
-
-child.stdout.on("data", (data) => {
-stdout += data.toString();
-});
-
-child.stderr.on("data", (data) => {
-stderr += data.toString();
-});
-
-child.on("close", (code) => {
-console.log("[Bridge] Exit code:", code);
-
-if (code !== 0) {
-  console.error(stderr);
-
-  return res.status(500).json({
-    error: stderr || Process exited with code ${code},
+    child.on("close", code => {
+      if (code !== 0) return reject(error);
+      resolve(output);
+    });
   });
 }
 
-console.log(stdout);
-
-return res.json({
-  ok: true,
-  output: stdout,
-});
-
-});
-});
-
-app.get("/", (req, res) => {
-res.send("OpenClaw bridge running");
+app.post("/send", async (req, res) => {
+  try {
+    const { text } = req.body;
+    const result = await sendToZalo(text);
+    res.json({ ok: true, result });
+  } catch (e) {
+    res.status(500).json({ error: e.toString() });
+  }
 });
 
 app.listen(5050, () => {
-console.log("OpenClaw bridge running on port 5050");
+  console.log("OpenClaw bridge running on http://localhost:5050");
 });

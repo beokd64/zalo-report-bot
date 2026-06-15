@@ -40,26 +40,20 @@ app.get("/webhook", (req, res) => {
 app.use(express.static(path.join(__dirname, "dashboard")));
 
 // ─── OpenClaw / Zalo API helpers ──────────────────────────────────────────────
-const ZALO_API = "https://openapi.zalo.me/v3.0/oa";
-const OA_TOKEN = process.env.ZALO_OA_ACCESS_TOKEN;
-const GROUP_ID = process.env.ZALO_GROUP_ID;
+const OPENCLAW_BRIDGE = process.env.OPENCLAW_BRIDGE_URL;
 
 async function sendGroupMessage(text) {
   try {
-    const bridgeUrl = process.env.OPENCLAW_BRIDGE_URL;
+    const res = await axios.post(`${OPENCLAW_BRIDGE}/send`, {
+      text
+    });
 
-    if (!bridgeUrl) {
-      throw new Error("Missing OPENCLAW_BRIDGE_URL");
-    }
-
-    const res = await axios.post(`${bridgeUrl}/send`, { text });
-
-    console.log("[OpenClaw] Message sent:", res.data);
+    console.log("[OpenClaw] Sent:", res.data);
     return res.data;
   } catch (err) {
     console.error("[OpenClaw] Send error:", err.response?.data || err.message);
   }
-}
+}}
 
 async function sendReportRequest() {
   const week = getWeekLabel();
@@ -92,7 +86,9 @@ console.log("=============================");
   const event = req.body;
   if (!event) return;
 
-  const { sender, message, group_id } = event;
+  const sender = event.sender || event.user;
+const message = event.message || {};
+const group_id = event.group_id || event.group;
 
   if (GROUP_ID && group_id !== GROUP_ID) {
     console.log(`[Webhook] Ignored group_id: ${group_id}`);
