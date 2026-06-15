@@ -61,7 +61,14 @@ app.post("/webhook", async (req, res) => {
   res.sendStatus(200);
   const event = req.body;
   if (!event) return;
+ app.get("/", (req, res) => {
+  res.status(200).send("Zalo Report Bot is running");
+});
 
+app.post("/", (req, res) => {
+  console.log("[Zalo Verify POST /]", req.body);
+  res.status(200).send("OK");
+});
   const { sender, message, group_id } = event;
   if (group_id !== GROUP_ID) return;
   if (!store.isCollecting()) return; // ignore chatter outside collection window
