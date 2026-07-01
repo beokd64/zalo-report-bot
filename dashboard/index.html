@@ -1,307 +1,541 @@
-require("dotenv").config();
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ZaloReport Bot — Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-const express = require("express");
-const cron = require("node-cron");
-const axios = require("axios");
-const path = require("path");
-const http = require("http");
-const { Server } = require("socket.io");
+  :root {
+    --bg: #0d0f14;
+    --surface: #161921;
+    --surface2: #1e2230;
+    --border: #252b3b;
+    --accent: #4f8ef7;
+    --accent2: #7c5fe6;
+    --success: #34d399;
+    --warn: #fbbf24;
+    --danger: #f87171;
+    --text: #e8eaf0;
+    --muted: #6b7280;
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'Inter', sans-serif;
+  }
 
-const store = require("./store");
-const { uploadFileFromUrl } = require("./google/drive");
-const { submitToGoogleForm } = require("./google/form");
-const { chatComplete } = require("./ai");
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
 
-// ─────────────────────────────────────────────
-// App + Server
-// ─────────────────────────────────────────────
-const app = express();
-const server = http.createServer(app);
+  /* ── Header ── */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 32px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+  }
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 700;
+    font-size: 1.05rem;
+    letter-spacing: -0.3px;
+  }
+  .logo-icon {
+    width: 32px; height: 32px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+  }
+  .pill {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 99px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+  .pill-active { background: rgba(52,211,153,.15); color: var(--success); border: 1px solid rgba(52,211,153,.3); }
+  .pill-idle   { background: rgba(107,114,128,.12); color: var(--muted);   border: 1px solid rgba(107,114,128,.2); }
 
-const io = new Server(server, {
-  cors: { origin: "*" },
-});
+  /* ── Layout ── */
+  main {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    flex: 1;
+    min-height: 0;
+  }
+  aside {
+    border-right: 1px solid var(--border);
+    background: var(--surface);
+    padding: 24px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    overflow-y: auto;
+  }
+  .content {
+    padding: 28px 32px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
 
-// ─────────────────────────────────────────────
-// CONFIG
-// ─────────────────────────────────────────────
-const GROUP_ID =
-  process.env.ZALO_GROUP_ID || "zalouser:group:3421414480936586205";
+  /* ── Sidebar sections ── */
+  .sidebar-section { display: flex; flex-direction: column; gap: 10px; }
+  .sidebar-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--muted);
+    padding: 0 4px;
+  }
 
-const OPENCLAW_BRIDGE_URL =
-  process.env.OPENCLAW_BRIDGE_URL ||
-  "https://giddy-jittery-starving.ngrok-free.dev";
+  /* ── Buttons ── */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    gap: 7px;
+    padding: 9px 16px;
+    border-radius: 8px;
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: opacity .15s, transform .1s;
+    width: 100%;
+  }
+  .btn:active { transform: scale(.97); }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: #fff;
+  }
+  .btn-primary:hover { opacity: .9; }
+  .btn-outline {
+    background: transparent;
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+  .btn-outline:hover { background: var(--surface2); }
+  .btn-danger { background: rgba(248,113,113,.15); color: var(--danger); border: 1px solid rgba(248,113,113,.3); }
+  .btn-success { background: rgba(52,211,153,.12); color: var(--success); border: 1px solid rgba(52,211,153,.25); }
 
-// ─────────────────────────────────────────────
-// MIDDLEWARE
-// ─────────────────────────────────────────────
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname, "dashboard")));
+  /* ── Schedule editor ── */
+  .schedule-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .schedule-card label { font-size: 12px; color: var(--muted); font-weight: 500; }
+  .cron-display {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--accent);
+    background: rgba(79,142,247,.08);
+    border: 1px solid rgba(79,142,247,.2);
+    border-radius: 6px;
+    padding: 8px 12px;
+  }
+  .preset-row { display: flex; flex-direction: column; gap: 6px; }
+  .preset-btn {
+    padding: 7px 10px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-size: 12px;
+    cursor: pointer;
+    text-align: left;
+    font-family: var(--sans);
+    transition: background .15s, border-color .15s;
+  }
+  .preset-btn:hover, .preset-btn.active { background: rgba(79,142,247,.1); border-color: var(--accent); color: var(--accent); }
 
-// ─────────────────────────────────────────────
-// SOCKET DASHBOARD
-// ─────────────────────────────────────────────
-io.on("connection", (socket) => {
-  console.log("[Dashboard] connected");
-});
+  input[type="text"] {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    padding: 8px 12px;
+    font-family: var(--mono);
+    font-size: 12px;
+    outline: none;
+  }
+  input[type="text"]:focus { border-color: var(--accent); }
 
-// ─────────────────────────────────────────────
-// HEALTH
-// ─────────────────────────────────────────────
-app.get("/health", (req, res) => {
-  res.status(200).send("OK");
-});
+  /* ── Stats row ── */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+  }
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px 20px;
+  }
+  .stat-value {
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .stat-label { font-size: 12px; color: var(--muted); margin-top: 5px; font-weight: 500; }
 
-// ─────────────────────────────────────────────
-// OPENCLAW BRIDGE (send message to Zalo)
-// ─────────────────────────────────────────────
-async function sendGroupMessage(text) {
+  /* ── Section header ── */
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .section-title { font-size: 14px; font-weight: 700; letter-spacing: -0.2px; }
+
+  /* ── Submitted list ── */
+  .member-list { display: flex; flex-direction: column; gap: 8px; }
+  .member-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .avatar {
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent2), var(--accent));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 700; color: #fff;
+    flex-shrink: 0;
+  }
+  .member-info { flex: 1; }
+  .member-name { font-size: 13px; font-weight: 600; }
+  .member-time { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .badge-done { padding: 3px 8px; border-radius: 99px; font-size: 11px; font-weight: 600; background: rgba(52,211,153,.12); color: var(--success); border: 1px solid rgba(52,211,153,.25); }
+  .badge-pending { padding: 3px 8px; border-radius: 99px; font-size: 11px; font-weight: 600; background: rgba(251,191,36,.1); color: var(--warn); border: 1px solid rgba(251,191,36,.25); }
+  .empty-state { color: var(--muted); font-size: 13px; text-align: center; padding: 24px; }
+
+  /* ── Live feed ── */
+  .feed {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    max-height: 320px;
+    display: flex;
+    flex-direction: column;
+  }
+  .feed-header {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: .8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .live-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--success);
+    animation: pulse 1.5s infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1}50%{opacity:.4} }
+  .feed-body {
+    overflow-y: auto;
+    flex: 1;
+    padding: 12px 0;
+  }
+  .feed-item {
+    padding: 7px 16px;
+    display: flex;
+    gap: 10px;
+    font-size: 12px;
+    line-height: 1.5;
+    border-bottom: 1px solid rgba(255,255,255,.03);
+  }
+  .feed-time { color: var(--muted); font-family: var(--mono); font-size: 11px; flex-shrink: 0; margin-top: 2px; }
+  .feed-user { color: var(--accent); font-weight: 600; flex-shrink: 0; }
+  .feed-text { color: var(--text); opacity: .85; }
+
+  /* ── Toast ── */
+  #toast {
+    position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(80px);
+    background: var(--surface2); border: 1px solid var(--border);
+    padding: 10px 22px; border-radius: 99px; font-size: 13px; font-weight: 500;
+    transition: transform .25s ease; z-index: 999;
+    pointer-events: none;
+  }
+  #toast.show { transform: translateX(-50%) translateY(0); }
+
+  .week-badge {
+    background: rgba(79,142,247,.1);
+    border: 1px solid rgba(79,142,247,.2);
+    color: var(--accent);
+    border-radius: 6px;
+    padding: 4px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: var(--mono);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">🤖</div>
+    ZaloReport Bot
+  </div>
+  <div style="display:flex;align-items:center;gap:12px;">
+    <span id="weekBadge" class="week-badge">—</span>
+    <span id="statusPill" class="pill pill-idle">Idle</span>
+  </div>
+</header>
+
+<main>
+  <!-- ── Sidebar ── -->
+  <aside>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Actions</div>
+      <button class="btn btn-primary" onclick="triggerManually()">
+        📤 Send Report Request
+      </button>
+      <button class="btn btn-outline" onclick="closeCollection()">
+        🔒 Close This Week
+      </button>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Schedule</div>
+      <div class="schedule-card">
+        <label>Current cron</label>
+        <div class="cron-display" id="cronDisplay">0 8 * * 1</div>
+
+        <label style="margin-top:4px;">Presets</label>
+        <div class="preset-row" id="presets">
+          <button class="preset-btn" data-cron="0 8 * * 1" onclick="applyPreset(this)">Every Monday 8 AM</button>
+          <button class="preset-btn" data-cron="0 9 * * 1" onclick="applyPreset(this)">Every Monday 9 AM</button>
+          <button class="preset-btn" data-cron="0 8 * * 5" onclick="applyPreset(this)">Every Friday 8 AM</button>
+          <button class="preset-btn" data-cron="0 8 1 * *" onclick="applyPreset(this)">1st of each month</button>
+        </div>
+
+        <label style="margin-top:4px;">Custom cron</label>
+        <input type="text" id="customCron" placeholder="e.g. 0 8 * * 1" />
+        <button class="btn btn-outline" style="font-size:12px;" onclick="saveCustomCron()">Apply Custom</button>
+      </div>
+    </div>
+
+    <div class="sidebar-section" style="margin-top:auto;">
+      <div class="sidebar-label">Links</div>
+      <a href="#" style="font-size:12px;color:var(--accent);text-decoration:none;">📊 Open Google Sheet →</a>
+      <a href="https://developers.zalo.me/docs" target="_blank" style="font-size:12px;color:var(--muted);text-decoration:none;">Zalo API Docs →</a>
+    </div>
+  </aside>
+
+  <!-- ── Main content ── -->
+  <div class="content">
+    <!-- Stats -->
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-value" id="statSubmitted">0</div>
+        <div class="stat-label">Reports submitted</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="statMessages">0</div>
+        <div class="stat-label">Messages this week</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="statPending">—</div>
+        <div class="stat-label">Collection status</div>
+      </div>
+    </div>
+
+    <!-- Members -->
+    <div>
+      <div class="section-header">
+        <span class="section-title">👥 Member Submissions</span>
+        <span id="submittedCount" style="font-size:12px;color:var(--muted);">0 submitted</span>
+      </div>
+      <div class="member-list" id="memberList">
+        <div class="empty-state">No submissions yet this week.<br/>Send a report request to start collecting.</div>
+      </div>
+    </div>
+
+    <!-- Live feed -->
+    <div>
+      <div class="section-header">
+        <span class="section-title">💬 Live Group Feed</span>
+      </div>
+      <div class="feed">
+        <div class="feed-header">
+          <div class="live-dot"></div>
+          Group Chat Messages
+        </div>
+        <div class="feed-body" id="feedBody">
+          <div class="empty-state" style="padding:20px;">Waiting for messages…</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div id="toast"></div>
+
+<script>
+let lastMessageCount = 0;
+let currentSchedule = "0 8 * * 1";
+
+async function fetchStatus() {
   try {
-    const res = await axios.post(`${OPENCLAW_BRIDGE_URL}/send`, {
-      text,
+    const r = await fetch("/api/status");
+    const d = await r.json();
+    updateUI(d);
+  } catch(e) { console.error(e); }
+}
+
+function updateUI(d) {
+  // Header
+  document.getElementById("weekBadge").textContent = d.currentWeek || "No active week";
+  const pill = document.getElementById("statusPill");
+  pill.textContent = d.isCollecting ? "Collecting" : "Idle";
+  pill.className = "pill " + (d.isCollecting ? "pill-active" : "pill-idle");
+
+  // Stats
+  const submitted = Object.keys(d.submitted || {}).length;
+  document.getElementById("statSubmitted").textContent = submitted;
+  document.getElementById("statMessages").textContent = (d.messages || []).length;
+  document.getElementById("statPending").textContent = d.isCollecting ? "Open" : "Closed";
+  document.getElementById("submittedCount").textContent = `${submitted} submitted`;
+
+  // Schedule
+  if (d.schedule && d.schedule !== currentSchedule) {
+    currentSchedule = d.schedule;
+    document.getElementById("cronDisplay").textContent = d.schedule;
+    document.getElementById("customCron").value = d.schedule;
+    document.querySelectorAll(".preset-btn").forEach(b => {
+      b.classList.toggle("active", b.dataset.cron === d.schedule);
     });
-
-    console.log("[OpenClaw] Sent:", res.data);
-    return res.data;
-  } catch (err) {
-    console.error("[OpenClaw] Error:", err.message);
-  }
-}
-
-// ─────────────────────────────────────────────
-// WEEKLY REQUEST
-// ─────────────────────────────────────────────
-async function sendReportRequest() {
-  const week = getWeekLabel();
-
-  const msg =
-    `📋 Weekly Report – ${week}\n\n` +
-    `Please submit your update:\n` +
-    `• Progress\n• Issues\n• Plan\n`;
-
-  await sendGroupMessage(msg);
-  store.startCollection(week);
-
-  console.log("[Bot] Weekly request sent");
-}
-
-// ─────────────────────────────────────────────
-// WEBHOOK (FROM OPENCLAW)
-// ─────────────────────────────────────────────
-app.post("/webhook", async (req, res) => {
-  console.log("========== WEBHOOK ==========");
-  console.log(JSON.stringify(req.body, null, 2));
-  console.log("=============================");
-
-  res.sendStatus(200);
-
-  const event = req.body;
-  if (!event) return;
-
-  const sender = event.sender || {};
-  const message = event.message || {};
-
-  const group_id =
-    event.group_id ||
-    event.groupId ||
-    event.raw?.from ||
-    event.rawEvent?.threadId;
-
-  // ignore other groups
-  if (GROUP_ID && group_id && group_id !== GROUP_ID) {
-    console.log("[Webhook] Ignored group:", group_id);
-    return;
   }
 
-  if (!store.isCollecting()) return;
-
-  const userId =
-    sender.id || event.senderId || "unknown";
-
-  const userName =
-    sender.display_name ||
-    event.senderName ||
-    `User_${userId}`;
-
-  const text =
-    message.text ||
-    event.text ||
-    event.content ||
-    "";
-
-  const attachments = message.attachments || [];
-
-  // ───────────────────────────────
-  // MESSAGE RECEIVED
-  // ───────────────────────────────
-  if (text) {
-    const msg = {
-      userId,
-      userName,
-      text,
-      timestamp: Date.now(),
-    };
-
-    store.addMessage(msg);
-
-    console.log(`[Webhook] ${userName}: ${text}`);
-
-    // 🚀 LIVE DASHBOARD PUSH (THIS IS THE KEY FIX)
-    io.emit("live_message", msg);
-
-    store.queueSubmission(userId, userName);
+  // Members
+  const ml = document.getElementById("memberList");
+  if (submitted === 0) {
+    ml.innerHTML = `<div class="empty-state">No submissions yet this week.<br/>Send a report request to start collecting.</div>`;
+  } else {
+    ml.innerHTML = Object.entries(d.submitted).map(([uid, info]) => {
+      const initials = (info.userName || "?").split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase();
+      const time = info.submittedAt ? new Date(info.submittedAt).toLocaleString("vi-VN") : "";
+      return `<div class="member-card">
+        <div class="avatar">${initials}</div>
+        <div class="member-info">
+          <div class="member-name">${info.userName}</div>
+          <div class="member-time">${time}</div>
+        </div>
+        <span class="badge-done">✓ Done</span>
+      </div>`;
+    }).join("");
   }
 
-  // ───────────────────────────────
-  // FILES
-  // ───────────────────────────────
-  for (const att of attachments) {
-    const fileUrl = att?.payload?.url || att?.url;
-
-    if (fileUrl) {
-      store.addFile({
-        userId,
-        userName,
-        fileUrl,
-        fileName: att?.name || "file",
-        timestamp: Date.now(),
-      });
-
-      store.queueSubmission(userId, userName);
+  // Feed
+  const msgs = d.messages || [];
+  if (msgs.length !== lastMessageCount) {
+    lastMessageCount = msgs.length;
+    const fb = document.getElementById("feedBody");
+    if (msgs.length === 0) {
+      fb.innerHTML = `<div class="empty-state" style="padding:20px;">Waiting for messages…</div>`;
+    } else {
+      fb.innerHTML = msgs.slice(-60).reverse().map(m => {
+        const t = new Date(m.timestamp).toLocaleTimeString("vi-VN", {hour:"2-digit",minute:"2-digit"});
+        return `<div class="feed-item">
+          <span class="feed-time">${t}</span>
+          <span class="feed-user">${m.userName}</span>
+          <span class="feed-text">${escHtml(m.text)}</span>
+        </div>`;
+      }).join("");
     }
   }
-
-  scheduleProcessing(userId, userName);
-});
-
-// ─────────────────────────────────────────────
-// MESSAGE DELAY BUFFER
-// ─────────────────────────────────────────────
-const pendingTimers = new Map();
-
-function scheduleProcessing(userId, userName) {
-  if (pendingTimers.has(userId)) {
-    clearTimeout(pendingTimers.get(userId));
-  }
-
-  const timer = setTimeout(() => {
-    pendingTimers.delete(userId);
-    processSubmission({ userId, userName });
-  }, 7000);
-
-  pendingTimers.set(userId, timer);
 }
 
-// ─────────────────────────────────────────────
-// PROCESS SUBMISSION
-// ─────────────────────────────────────────────
-async function processSubmission({ userId, userName }) {
-  if (store.hasSubmitted(userId)) return;
-
-  const userMessages = store.getUserMessages(userId);
-  const reportText = userMessages.map(m => m.text).join("\n");
-
-  const aiNotes = await analyzeReport(userName, reportText);
-
-  await submitToGoogleForm({
-    name: userName,
-    userId,
-    week: store.getCurrentWeek(),
-    report: reportText,
-    notes: aiNotes,
-    fileLinks: [],
-  });
-
-  store.markSubmitted(userId, userName);
-
-  await sendGroupMessage(
-    `✅ ${userName} submitted successfully!`
-  );
-
-  // update dashboard
-  io.emit("submission_update", {
-    userId,
-    userName,
-    time: Date.now(),
-  });
+async function triggerManually() {
+  showToast("⏳ Sending report request…");
+  const r = await fetch("/api/trigger", { method: "POST" });
+  const d = await r.json();
+  showToast(d.ok ? "✅ Report request sent to group!" : "❌ Error sending");
+  fetchStatus();
 }
 
-// ─────────────────────────────────────────────
-// AI ANALYSIS
-// ─────────────────────────────────────────────
-async function analyzeReport(userName, reportText) {
-  try {
-    const prompt =
-      `Summarize this report:\n${userName}\n${reportText}`;
+async function closeCollection() {
+  await fetch("/api/close-collection", { method: "POST" });
+  showToast("🔒 Collection closed");
+  fetchStatus();
+}
 
-    return await chatComplete(prompt, 200);
-  } catch {
-    return "AI unavailable";
+async function applyPreset(btn) {
+  const expr = btn.dataset.cron;
+  await setCron(expr);
+}
+
+async function saveCustomCron() {
+  const expr = document.getElementById("customCron").value.trim();
+  if (!expr) return;
+  await setCron(expr);
+}
+
+async function setCron(expr) {
+  const r = await fetch("/api/schedule", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ cron: expr }),
+  });
+  const d = await r.json();
+  if (d.ok) {
+    showToast(`⏰ Schedule updated: ${expr}`);
+    fetchStatus();
+  } else {
+    showToast("❌ Invalid cron expression");
   }
 }
 
-// ─────────────────────────────────────────────
-// SCHEDULER
-// ─────────────────────────────────────────────
-let cronJob = null;
-
-function scheduleWeeklyReport(expr) {
-  if (cronJob) cronJob.stop();
-
-  cronJob = cron.schedule(expr, sendReportRequest, {
-    timezone: "Asia/Ho_Chi_Minh",
-  });
-
-  store.setSchedule(expr);
+function showToast(msg) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  setTimeout(() => t.classList.remove("show"), 2800);
 }
 
-scheduleWeeklyReport(store.getSchedule() || "0 8 * * 1");
-
-// ─────────────────────────────────────────────
-// API
-// ─────────────────────────────────────────────
-app.get("/api/status", (req, res) => {
-  res.json({
-    isCollecting: store.isCollecting(),
-    currentWeek: store.getCurrentWeek(),
-    schedule: store.getSchedule(),
-    submitted: store.getSubmitted(),
-    messages: store.getRecentMessages(100),
-  });
-});
-
-app.post("/api/trigger", async (req, res) => {
-  await sendReportRequest();
-  res.json({ ok: true });
-});
-
-app.post("/api/schedule", (req, res) => {
-  scheduleWeeklyReport(req.body.cron);
-  res.json({ ok: true });
-});
-
-app.post("/api/close-collection", (req, res) => {
-  store.stopCollection();
-  res.json({ ok: true });
-});
-
-// ─────────────────────────────────────────────
-// START SERVER
-// ─────────────────────────────────────────────
-const PORT = process.env.PORT || 3000;
-
-server.listen(PORT, () => {
-  console.log(`[Server] Running on ${PORT}`);
-});
-
-// ─────────────────────────────────────────────
-// UTIL
-// ─────────────────────────────────────────────
-function getWeekLabel() {
-  const now = new Date();
-  const start = new Date(now);
-  start.setDate(now.getDate() - now.getDay() + 1);
-
-  return `Week of ${start.toLocaleDateString("en-GB")}`;
+function escHtml(s) {
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
 }
+
+fetchStatus();
+setInterval(fetchStatus, 5000);
+</script>
+</body>
+</html> 
