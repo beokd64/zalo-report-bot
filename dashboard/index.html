@@ -3,539 +3,569 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>ZaloReport Bot — Dashboard</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<title>ZaloReport — Console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-  :root {
-    --bg: #0d0f14;
-    --surface: #161921;
-    --surface2: #1e2230;
-    --border: #252b3b;
-    --accent: #4f8ef7;
-    --accent2: #7c5fe6;
-    --success: #34d399;
-    --warn: #fbbf24;
-    --danger: #f87171;
-    --text: #e8eaf0;
-    --muted: #6b7280;
-    --mono: 'JetBrains Mono', monospace;
-    --sans: 'Inter', sans-serif;
+  :root{
+    --bg:        #0a0d10;
+    --panel:     #12161b;
+    --panel-2:   #171c22;
+    --line:      #232a32;
+    --text:      #e7eaee;
+    --muted:     #7a8290;
+    --accent:    #4ce0c4;
+    --accent-dim:#2a4f49;
+    --amber:     #f2a93b;
+    --red:       #ef5b5b;
   }
 
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: var(--sans);
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(ellipse 900px 500px at 15% -10%, rgba(76,224,196,0.06), transparent),
+      var(--bg);
+    color:var(--text);
+    font-family:'Inter', sans-serif;
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
   }
 
-  /* ── Header ── */
-  header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 18px 32px;
-    border-bottom: 1px solid var(--border);
-    background: var(--surface);
-  }
-  .logo {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-weight: 700;
-    font-size: 1.05rem;
-    letter-spacing: -0.3px;
-  }
-  .logo-icon {
-    width: 32px; height: 32px;
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    border-radius: 8px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 16px;
-  }
-  .pill {
-    font-size: 11px;
-    font-weight: 600;
-    padding: 3px 10px;
-    border-radius: 99px;
-    letter-spacing: 0.5px;
-    text-transform: uppercase;
-  }
-  .pill-active { background: rgba(52,211,153,.15); color: var(--success); border: 1px solid rgba(52,211,153,.3); }
-  .pill-idle   { background: rgba(107,114,128,.12); color: var(--muted);   border: 1px solid rgba(107,114,128,.2); }
+  .mono{font-family:'IBM Plex Mono', monospace;}
+  .display{font-family:'Space Grotesk', sans-serif;}
 
-  /* ── Layout ── */
-  main {
-    display: grid;
-    grid-template-columns: 280px 1fr;
-    flex: 1;
-    min-height: 0;
-  }
-  aside {
-    border-right: 1px solid var(--border);
-    background: var(--surface);
-    padding: 24px 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    overflow-y: auto;
-  }
-  .content {
-    padding: 28px 32px;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 24px;
+  a{color:inherit;}
+
+  /* ── layout shell ─────────────────────────── */
+  .shell{
+    max-width:1180px;
+    margin:0 auto;
+    padding:28px 24px 60px;
   }
 
-  /* ── Sidebar sections ── */
-  .sidebar-section { display: flex; flex-direction: column; gap: 10px; }
-  .sidebar-label {
-    font-size: 10px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    color: var(--muted);
-    padding: 0 4px;
+  /* ── header ───────────────────────────────── */
+  header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:16px;
+    padding-bottom:22px;
+    border-bottom:1px solid var(--line);
+    margin-bottom:22px;
   }
 
-  /* ── Buttons ── */
-  .btn {
-    display: inline-flex; align-items: center; justify-content: center;
-    gap: 7px;
-    padding: 9px 16px;
-    border-radius: 8px;
-    font-family: var(--sans);
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    border: none;
-    transition: opacity .15s, transform .1s;
-    width: 100%;
+  .brand{display:flex; align-items:center; gap:12px;}
+  .brand-mark{
+    width:34px;height:34px;border-radius:8px;
+    background:linear-gradient(135deg, var(--accent), #2b8f7c);
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:700; font-size:15px; color:#06110e;
+    flex-shrink:0;
   }
-  .btn:active { transform: scale(.97); }
-  .btn-primary {
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    color: #fff;
+  .brand-text h1{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:17px; font-weight:600; margin:0; letter-spacing:0.2px;
   }
-  .btn-primary:hover { opacity: .9; }
-  .btn-outline {
-    background: transparent;
-    color: var(--text);
-    border: 1px solid var(--border);
+  .brand-text span{
+    font-size:12px; color:var(--muted);
+    font-family:'IBM Plex Mono', monospace;
   }
-  .btn-outline:hover { background: var(--surface2); }
-  .btn-danger { background: rgba(248,113,113,.15); color: var(--danger); border: 1px solid rgba(248,113,113,.3); }
-  .btn-success { background: rgba(52,211,153,.12); color: var(--success); border: 1px solid rgba(52,211,153,.25); }
 
-  /* ── Schedule editor ── */
-  .schedule-card {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
+  .status-pill{
+    display:flex; align-items:center; gap:9px;
+    padding:8px 14px 8px 12px;
+    border-radius:100px;
+    border:1px solid var(--line);
+    background:var(--panel);
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12.5px;
+    letter-spacing:0.4px;
   }
-  .schedule-card label { font-size: 12px; color: var(--muted); font-weight: 500; }
-  .cron-display {
-    font-family: var(--mono);
-    font-size: 13px;
-    color: var(--accent);
-    background: rgba(79,142,247,.08);
-    border: 1px solid rgba(79,142,247,.2);
-    border-radius: 6px;
-    padding: 8px 12px;
+  .dot{
+    width:8px;height:8px;border-radius:50%;
+    background:var(--muted);
+    flex-shrink:0;
   }
-  .preset-row { display: flex; flex-direction: column; gap: 6px; }
-  .preset-btn {
-    padding: 7px 10px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    color: var(--text);
-    font-size: 12px;
-    cursor: pointer;
-    text-align: left;
-    font-family: var(--sans);
-    transition: background .15s, border-color .15s;
+  .status-pill.live .dot{
+    background:var(--accent);
+    box-shadow:0 0 0 0 rgba(76,224,196,0.6);
+    animation:pulse 1.8s infinite;
   }
-  .preset-btn:hover, .preset-btn.active { background: rgba(79,142,247,.1); border-color: var(--accent); color: var(--accent); }
+  .status-pill.live{border-color:var(--accent-dim); color:var(--accent);}
+  @keyframes pulse{
+    0%{box-shadow:0 0 0 0 rgba(76,224,196,0.55);}
+    70%{box-shadow:0 0 0 8px rgba(76,224,196,0);}
+    100%{box-shadow:0 0 0 0 rgba(76,224,196,0);}
+  }
 
-  input[type="text"] {
-    width: 100%;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    color: var(--text);
-    padding: 8px 12px;
-    font-family: var(--mono);
-    font-size: 12px;
-    outline: none;
+  /* ── stat row ─────────────────────────────── */
+  .stats{
+    display:grid;
+    grid-template-columns:repeat(4, 1fr);
+    gap:12px;
+    margin-bottom:22px;
   }
-  input[type="text"]:focus { border-color: var(--accent); }
+  .stat{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:14px 16px;
+  }
+  .stat .k{
+    font-size:11px; text-transform:uppercase; letter-spacing:0.8px;
+    color:var(--muted); margin-bottom:8px; font-weight:500;
+  }
+  .stat .v{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:22px; font-weight:600;
+  }
+  .stat .v.accent{color:var(--accent);}
+  .stat .sub{font-size:11.5px; color:var(--muted); margin-top:4px; font-family:'IBM Plex Mono', monospace;}
 
-  /* ── Stats row ── */
-  .stats-row {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 14px;
+  /* ── main grid ────────────────────────────── */
+  .grid{
+    display:grid;
+    grid-template-columns:1fr 320px;
+    gap:16px;
+    align-items:start;
   }
-  .stat-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 18px 20px;
-  }
-  .stat-value {
-    font-size: 2rem;
-    font-weight: 700;
-    line-height: 1;
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-  .stat-label { font-size: 12px; color: var(--muted); margin-top: 5px; font-weight: 500; }
 
-  /* ── Section header ── */
-  .section-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 12px;
+  .panel{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:12px;
+    overflow:hidden;
   }
-  .section-title { font-size: 14px; font-weight: 700; letter-spacing: -0.2px; }
+  .panel-head{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:14px 18px;
+    border-bottom:1px solid var(--line);
+  }
+  .panel-head h2{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:13.5px; font-weight:600; margin:0;
+    letter-spacing:0.3px;
+  }
+  .panel-head .count{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11.5px; color:var(--muted);
+  }
 
-  /* ── Submitted list ── */
-  .member-list { display: flex; flex-direction: column; gap: 8px; }
-  .member-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 12px 16px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
+  /* ── live feed ────────────────────────────── */
+  #feed{
+    max-height:520px;
+    overflow-y:auto;
+    padding:6px 10px;
   }
-  .avatar {
-    width: 34px; height: 34px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, var(--accent2), var(--accent));
-    display: flex; align-items: center; justify-content: center;
-    font-size: 13px; font-weight: 700; color: #fff;
-    flex-shrink: 0;
-  }
-  .member-info { flex: 1; }
-  .member-name { font-size: 13px; font-weight: 600; }
-  .member-time { font-size: 11px; color: var(--muted); margin-top: 2px; }
-  .badge-done { padding: 3px 8px; border-radius: 99px; font-size: 11px; font-weight: 600; background: rgba(52,211,153,.12); color: var(--success); border: 1px solid rgba(52,211,153,.25); }
-  .badge-pending { padding: 3px 8px; border-radius: 99px; font-size: 11px; font-weight: 600; background: rgba(251,191,36,.1); color: var(--warn); border: 1px solid rgba(251,191,36,.25); }
-  .empty-state { color: var(--muted); font-size: 13px; text-align: center; padding: 24px; }
+  #feed::-webkit-scrollbar{width:7px;}
+  #feed::-webkit-scrollbar-thumb{background:var(--line); border-radius:10px;}
 
-  /* ── Live feed ── */
-  .feed {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    overflow: hidden;
-    max-height: 320px;
-    display: flex;
-    flex-direction: column;
+  .msg{
+    display:flex; gap:11px;
+    padding:11px 8px;
+    border-bottom:1px solid var(--line);
   }
-  .feed-header {
-    padding: 12px 16px;
-    border-bottom: 1px solid var(--border);
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: .8px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
+  .msg:last-child{border-bottom:none;}
+  .avatar{
+    width:30px;height:30px;border-radius:8px;
+    background:var(--panel-2);
+    border:1px solid var(--line);
+    display:flex;align-items:center;justify-content:center;
+    font-size:11.5px; font-weight:600; color:var(--accent);
+    flex-shrink:0;
+    font-family:'Space Grotesk', sans-serif;
   }
-  .live-dot {
-    width: 7px; height: 7px;
-    border-radius: 50%;
-    background: var(--success);
-    animation: pulse 1.5s infinite;
+  .msg-body{flex:1; min-width:0;}
+  .msg-top{
+    display:flex; align-items:baseline; gap:8px; margin-bottom:3px;
   }
-  @keyframes pulse { 0%,100%{opacity:1}50%{opacity:.4} }
-  .feed-body {
-    overflow-y: auto;
-    flex: 1;
-    padding: 12px 0;
+  .msg-user{font-size:13px; font-weight:600;}
+  .msg-time{
+    font-size:10.5px; color:var(--muted);
+    font-family:'IBM Plex Mono', monospace;
   }
-  .feed-item {
-    padding: 7px 16px;
-    display: flex;
-    gap: 10px;
-    font-size: 12px;
-    line-height: 1.5;
-    border-bottom: 1px solid rgba(255,255,255,.03);
+  .msg-text{
+    font-size:13px; color:#c7ccd4;
+    line-height:1.45;
+    white-space:pre-wrap;
+    word-break:break-word;
   }
-  .feed-time { color: var(--muted); font-family: var(--mono); font-size: 11px; flex-shrink: 0; margin-top: 2px; }
-  .feed-user { color: var(--accent); font-weight: 600; flex-shrink: 0; }
-  .feed-text { color: var(--text); opacity: .85; }
+  .empty-state{
+    padding:48px 20px;
+    text-align:center;
+    color:var(--muted);
+    font-size:13px;
+  }
+  .empty-state .glyph{font-size:22px; margin-bottom:8px; opacity:0.5;}
 
-  /* ── Toast ── */
-  #toast {
-    position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(80px);
-    background: var(--surface2); border: 1px solid var(--border);
-    padding: 10px 22px; border-radius: 99px; font-size: 13px; font-weight: 500;
-    transition: transform .25s ease; z-index: 999;
-    pointer-events: none;
-  }
-  #toast.show { transform: translateX(-50%) translateY(0); }
+  /* ── sidebar ──────────────────────────────── */
+  .sidebar{display:flex; flex-direction:column; gap:16px;}
 
-  .week-badge {
-    background: rgba(79,142,247,.1);
-    border: 1px solid rgba(79,142,247,.2);
-    color: var(--accent);
-    border-radius: 6px;
-    padding: 4px 12px;
-    font-size: 12px;
-    font-weight: 600;
-    font-family: var(--mono);
+  .roster{padding:10px 8px; max-height:220px; overflow-y:auto;}
+  .roster-row{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:8px 10px; border-radius:7px;
+    font-size:12.5px;
+  }
+  .roster-row + .roster-row{margin-top:2px;}
+  .roster-row .check{
+    color:var(--accent); font-size:13px;
+  }
+
+  .controls{padding:16px;}
+  .field{margin-bottom:14px;}
+  .field label{
+    display:block; font-size:11px; text-transform:uppercase;
+    letter-spacing:0.6px; color:var(--muted); margin-bottom:6px;
+    font-weight:500;
+  }
+  .field input{
+    width:100%;
+    background:var(--panel-2);
+    border:1px solid var(--line);
+    border-radius:7px;
+    padding:9px 10px;
+    color:var(--text);
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12.5px;
+  }
+  .field input:focus{outline:none; border-color:var(--accent-dim);}
+  .field .hint{font-size:10.5px; color:var(--muted); margin-top:5px;}
+
+  .btn{
+    width:100%;
+    display:flex; align-items:center; justify-content:center; gap:7px;
+    padding:10px 12px;
+    border-radius:7px;
+    border:1px solid var(--line);
+    background:var(--panel-2);
+    color:var(--text);
+    font-size:12.5px; font-weight:500;
+    cursor:pointer;
+    transition:border-color .15s ease, background .15s ease;
+    font-family:'Inter', sans-serif;
+  }
+  .btn:hover{border-color:#3a4450;}
+  .btn:active{transform:translateY(1px);}
+  .btn.primary{
+    background:linear-gradient(135deg, var(--accent), #2b8f7c);
+    color:#06110e; border:none; font-weight:600;
+  }
+  .btn.primary:hover{filter:brightness(1.06);}
+  .btn.danger{color:var(--red); border-color:#3a2323;}
+  .btn.danger:hover{border-color:var(--red);}
+  .btn + .btn{margin-top:8px;}
+  .btn:disabled{opacity:0.5; cursor:not-allowed;}
+
+  .toast{
+    position:fixed; bottom:20px; left:50%; transform:translateX(-50%);
+    background:var(--panel-2); border:1px solid var(--line);
+    color:var(--text); padding:10px 18px; border-radius:8px;
+    font-size:12.5px; font-family:'IBM Plex Mono', monospace;
+    opacity:0; pointer-events:none; transition:opacity .25s ease, bottom .25s ease;
+    z-index:50;
+  }
+  .toast.show{opacity:1; bottom:28px;}
+
+  @media (max-width:820px){
+    .grid{grid-template-columns:1fr;}
+    .stats{grid-template-columns:repeat(2,1fr);}
   }
 </style>
 </head>
 <body>
 
-<header>
-  <div class="logo">
-    <div class="logo-icon">🤖</div>
-    ZaloReport Bot
+<div class="shell">
+
+  <header>
+    <div class="brand">
+      <div class="brand-mark">ZR</div>
+      <div class="brand-text">
+        <h1>ZaloReport Console</h1>
+        <span id="week-label">—</span>
+      </div>
+    </div>
+    <div class="status-pill" id="status-pill">
+      <span class="dot"></span>
+      <span id="status-label">CHECKING…</span>
+    </div>
+  </header>
+
+  <div class="stats">
+    <div class="stat">
+      <div class="k">Submitted</div>
+      <div class="v accent" id="stat-submitted">0</div>
+      <div class="sub" id="stat-submitted-sub">of 0 tracked</div>
+    </div>
+    <div class="stat">
+      <div class="k">Messages logged</div>
+      <div class="v" id="stat-messages">0</div>
+      <div class="sub">this collection window</div>
+    </div>
+    <div class="stat">
+      <div class="k">Schedule</div>
+      <div class="v mono" id="stat-schedule" style="font-size:15px;">—</div>
+      <div class="sub">Asia/Ho_Chi_Minh</div>
+    </div>
+    <div class="stat">
+      <div class="k">Connection</div>
+      <div class="v" id="stat-socket" style="font-size:15px;">—</div>
+      <div class="sub">live feed</div>
+    </div>
   </div>
-  <div style="display:flex;align-items:center;gap:12px;">
-    <span id="weekBadge" class="week-badge">—</span>
-    <span id="statusPill" class="pill pill-idle">Idle</span>
-  </div>
-</header>
 
-<main>
-  <!-- ── Sidebar ── -->
-  <aside>
-    <div class="sidebar-section">
-      <div class="sidebar-label">Actions</div>
-      <button class="btn btn-primary" onclick="triggerManually()">
-        📤 Send Report Request
-      </button>
-      <button class="btn btn-outline" onclick="closeCollection()">
-        🔒 Close This Week
-      </button>
-    </div>
+  <div class="grid">
 
-    <div class="sidebar-section">
-      <div class="sidebar-label">Schedule</div>
-      <div class="schedule-card">
-        <label>Current cron</label>
-        <div class="cron-display" id="cronDisplay">0 8 * * 1</div>
-
-        <label style="margin-top:4px;">Presets</label>
-        <div class="preset-row" id="presets">
-          <button class="preset-btn" data-cron="0 8 * * 1" onclick="applyPreset(this)">Every Monday 8 AM</button>
-          <button class="preset-btn" data-cron="0 9 * * 1" onclick="applyPreset(this)">Every Monday 9 AM</button>
-          <button class="preset-btn" data-cron="0 8 * * 5" onclick="applyPreset(this)">Every Friday 8 AM</button>
-          <button class="preset-btn" data-cron="0 8 1 * *" onclick="applyPreset(this)">1st of each month</button>
-        </div>
-
-        <label style="margin-top:4px;">Custom cron</label>
-        <input type="text" id="customCron" placeholder="e.g. 0 8 * * 1" />
-        <button class="btn btn-outline" style="font-size:12px;" onclick="saveCustomCron()">Apply Custom</button>
+    <!-- LIVE FEED -->
+    <div class="panel">
+      <div class="panel-head">
+        <h2>Live feed</h2>
+        <span class="count" id="feed-count">0 messages</span>
       </div>
-    </div>
-
-    <div class="sidebar-section" style="margin-top:auto;">
-      <div class="sidebar-label">Links</div>
-      <a href="#" style="font-size:12px;color:var(--accent);text-decoration:none;">📊 Open Google Sheet →</a>
-      <a href="https://developers.zalo.me/docs" target="_blank" style="font-size:12px;color:var(--muted);text-decoration:none;">Zalo API Docs →</a>
-    </div>
-  </aside>
-
-  <!-- ── Main content ── -->
-  <div class="content">
-    <!-- Stats -->
-    <div class="stats-row">
-      <div class="stat-card">
-        <div class="stat-value" id="statSubmitted">0</div>
-        <div class="stat-label">Reports submitted</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value" id="statMessages">0</div>
-        <div class="stat-label">Messages this week</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value" id="statPending">—</div>
-        <div class="stat-label">Collection status</div>
-      </div>
-    </div>
-
-    <!-- Members -->
-    <div>
-      <div class="section-header">
-        <span class="section-title">👥 Member Submissions</span>
-        <span id="submittedCount" style="font-size:12px;color:var(--muted);">0 submitted</span>
-      </div>
-      <div class="member-list" id="memberList">
-        <div class="empty-state">No submissions yet this week.<br/>Send a report request to start collecting.</div>
-      </div>
-    </div>
-
-    <!-- Live feed -->
-    <div>
-      <div class="section-header">
-        <span class="section-title">💬 Live Group Feed</span>
-      </div>
-      <div class="feed">
-        <div class="feed-header">
-          <div class="live-dot"></div>
-          Group Chat Messages
-        </div>
-        <div class="feed-body" id="feedBody">
-          <div class="empty-state" style="padding:20px;">Waiting for messages…</div>
+      <div id="feed">
+        <div class="empty-state" id="feed-empty">
+          <div class="glyph">◌</div>
+          Waiting for messages from the group…
         </div>
       </div>
     </div>
+
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+
+      <div class="panel">
+        <div class="panel-head">
+          <h2>Roster</h2>
+          <span class="count" id="roster-count">0</span>
+        </div>
+        <div class="roster" id="roster">
+          <div class="empty-state" style="padding:24px 12px;">No submissions yet</div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><h2>Controls</h2></div>
+        <div class="controls">
+
+          <button class="btn primary" id="btn-trigger">▶ Trigger report request now</button>
+
+          <div class="field" style="margin-top:16px;">
+            <label>Cron schedule</label>
+            <input type="text" id="cron-input" placeholder="0 8 * * 1" class="mono" />
+            <div class="hint">Minute Hour Day Month Weekday — default Mon 08:00</div>
+          </div>
+          <button class="btn" id="btn-schedule">Save schedule</button>
+
+          <button class="btn danger" id="btn-close" style="margin-top:16px;">■ Close collection window</button>
+        </div>
+      </div>
+
+    </div>
   </div>
-</main>
+</div>
 
-<div id="toast"></div>
+<div class="toast" id="toast"></div>
 
+<script src="/socket.io/socket.io.js"></script>
 <script>
-let lastMessageCount = 0;
-let currentSchedule = "0 8 * * 1";
+(function(){
+  const $ = (id) => document.getElementById(id);
 
-async function fetchStatus() {
-  try {
-    const r = await fetch("/api/status");
-    const d = await r.json();
-    updateUI(d);
-  } catch(e) { console.error(e); }
-}
+  const feedEl        = $('feed');
+  const feedEmpty      = $('feed-empty');
+  const feedCount      = $('feed-count');
+  const rosterEl       = $('roster');
+  const rosterCount    = $('roster-count');
+  const statusPill     = $('status-pill');
+  const statusLabel    = $('status-label');
+  const weekLabel      = $('week-label');
+  const statSubmitted  = $('stat-submitted');
+  const statSubmittedSub = $('stat-submitted-sub');
+  const statMessages   = $('stat-messages');
+  const statSchedule   = $('stat-schedule');
+  const statSocket     = $('stat-socket');
+  const cronInput      = $('cron-input');
+  const toastEl        = $('toast');
 
-function updateUI(d) {
-  // Header
-  document.getElementById("weekBadge").textContent = d.currentWeek || "No active week";
-  const pill = document.getElementById("statusPill");
-  pill.textContent = d.isCollecting ? "Collecting" : "Idle";
-  pill.className = "pill " + (d.isCollecting ? "pill-active" : "pill-idle");
+  let messageTotal = 0;
 
-  // Stats
-  const submitted = Object.keys(d.submitted || {}).length;
-  document.getElementById("statSubmitted").textContent = submitted;
-  document.getElementById("statMessages").textContent = (d.messages || []).length;
-  document.getElementById("statPending").textContent = d.isCollecting ? "Open" : "Closed";
-  document.getElementById("submittedCount").textContent = `${submitted} submitted`;
-
-  // Schedule
-  if (d.schedule && d.schedule !== currentSchedule) {
-    currentSchedule = d.schedule;
-    document.getElementById("cronDisplay").textContent = d.schedule;
-    document.getElementById("customCron").value = d.schedule;
-    document.querySelectorAll(".preset-btn").forEach(b => {
-      b.classList.toggle("active", b.dataset.cron === d.schedule);
-    });
+  function showToast(text){
+    toastEl.textContent = text;
+    toastEl.classList.add('show');
+    setTimeout(() => toastEl.classList.remove('show'), 2600);
   }
 
-  // Members
-  const ml = document.getElementById("memberList");
-  if (submitted === 0) {
-    ml.innerHTML = `<div class="empty-state">No submissions yet this week.<br/>Send a report request to start collecting.</div>`;
-  } else {
-    ml.innerHTML = Object.entries(d.submitted).map(([uid, info]) => {
-      const initials = (info.userName || "?").split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase();
-      const time = info.submittedAt ? new Date(info.submittedAt).toLocaleString("vi-VN") : "";
-      return `<div class="member-card">
-        <div class="avatar">${initials}</div>
-        <div class="member-info">
-          <div class="member-name">${info.userName}</div>
-          <div class="member-time">${time}</div>
+  function initials(name){
+    if(!name) return '?';
+    const parts = name.trim().split(/\s+/);
+    const first = parts[0]?.[0] || '';
+    const last = parts.length > 1 ? parts[parts.length-1][0] : '';
+    return (first + last).toUpperCase();
+  }
+
+  function timeString(ts){
+    const d = new Date(ts);
+    return d.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' });
+  }
+
+  function appendMessage(msg, prepend){
+    feedEmpty.style.display = 'none';
+    const row = document.createElement('div');
+    row.className = 'msg';
+    row.innerHTML = `
+      <div class="avatar">${initials(msg.userName)}</div>
+      <div class="msg-body">
+        <div class="msg-top">
+          <span class="msg-user">${escapeHtml(msg.userName || 'Unknown')}</span>
+          <span class="msg-time">${timeString(msg.timestamp)}</span>
         </div>
-        <span class="badge-done">✓ Done</span>
-      </div>`;
-    }).join("");
+        <div class="msg-text">${escapeHtml(msg.text || '')}</div>
+      </div>
+    `;
+    if(prepend){
+      feedEl.insertBefore(row, feedEl.firstChild?.nextSibling || feedEl.firstChild);
+    } else {
+      feedEl.appendChild(row);
+      feedEl.scrollTop = feedEl.scrollHeight;
+    }
+    messageTotal++;
+    feedCount.textContent = `${messageTotal} message${messageTotal === 1 ? '' : 's'}`;
+    statMessages.textContent = messageTotal;
   }
 
-  // Feed
-  const msgs = d.messages || [];
-  if (msgs.length !== lastMessageCount) {
-    lastMessageCount = msgs.length;
-    const fb = document.getElementById("feedBody");
-    if (msgs.length === 0) {
-      fb.innerHTML = `<div class="empty-state" style="padding:20px;">Waiting for messages…</div>`;
+  function escapeHtml(str){
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  function renderRoster(submitted){
+    const entries = Object.values(submitted || {});
+    rosterCount.textContent = entries.length;
+    statSubmitted.textContent = entries.length;
+
+    if(!entries.length){
+      rosterEl.innerHTML = '<div class="empty-state" style="padding:24px 12px;">No submissions yet</div>';
+      return;
+    }
+    rosterEl.innerHTML = entries.map(u => `
+      <div class="roster-row">
+        <span>${escapeHtml(u.userName || u.name || 'Unknown')}</span>
+        <span class="check">✓</span>
+      </div>
+    `).join('');
+  }
+
+  function setCollecting(isCollecting){
+    if(isCollecting){
+      statusPill.classList.add('live');
+      statusLabel.textContent = 'COLLECTING';
     } else {
-      fb.innerHTML = msgs.slice(-60).reverse().map(m => {
-        const t = new Date(m.timestamp).toLocaleTimeString("vi-VN", {hour:"2-digit",minute:"2-digit"});
-        return `<div class="feed-item">
-          <span class="feed-time">${t}</span>
-          <span class="feed-user">${m.userName}</span>
-          <span class="feed-text">${escHtml(m.text)}</span>
-        </div>`;
-      }).join("");
+      statusPill.classList.remove('live');
+      statusLabel.textContent = 'IDLE';
     }
   }
-}
 
-async function triggerManually() {
-  showToast("⏳ Sending report request…");
-  const r = await fetch("/api/trigger", { method: "POST" });
-  const d = await r.json();
-  showToast(d.ok ? "✅ Report request sent to group!" : "❌ Error sending");
-  fetchStatus();
-}
+  async function loadStatus(){
+    try{
+      const res = await fetch('/api/status');
+      const data = await res.json();
 
-async function closeCollection() {
-  await fetch("/api/close-collection", { method: "POST" });
-  showToast("🔒 Collection closed");
-  fetchStatus();
-}
+      setCollecting(data.isCollecting);
+      weekLabel.textContent = data.currentWeek || '—';
+      statSchedule.textContent = data.schedule || '—';
+      cronInput.value = data.schedule || '';
 
-async function applyPreset(btn) {
-  const expr = btn.dataset.cron;
-  await setCron(expr);
-}
+      renderRoster(data.submitted);
 
-async function saveCustomCron() {
-  const expr = document.getElementById("customCron").value.trim();
-  if (!expr) return;
-  await setCron(expr);
-}
+      // repopulate feed
+      feedEl.querySelectorAll('.msg').forEach(el => el.remove());
+      messageTotal = 0;
+      const msgs = data.messages || [];
+      if(msgs.length){
+        msgs.forEach(m => appendMessage(m, false));
+      } else {
+        feedEmpty.style.display = 'block';
+        feedCount.textContent = '0 messages';
+      }
 
-async function setCron(expr) {
-  const r = await fetch("/api/schedule", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ cron: expr }),
-  });
-  const d = await r.json();
-  if (d.ok) {
-    showToast(`⏰ Schedule updated: ${expr}`);
-    fetchStatus();
-  } else {
-    showToast("❌ Invalid cron expression");
+      statSubmittedSub.textContent = `of ${msgs.length ? new Set(msgs.map(m=>m.userId)).size : 0} tracked`;
+    } catch(err){
+      statusLabel.textContent = 'ERROR';
+      console.error('status load failed', err);
+    }
   }
-}
 
-function showToast(msg) {
-  const t = document.getElementById("toast");
-  t.textContent = msg;
-  t.classList.add("show");
-  setTimeout(() => t.classList.remove("show"), 2800);
-}
+  // ── socket.io live updates ─────────────────
+  const socket = io();
 
-function escHtml(s) {
-  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
-}
+  socket.on('connect', () => {
+    statSocket.textContent = 'Connected';
+    statSocket.style.color = 'var(--accent)';
+  });
+  socket.on('disconnect', () => {
+    statSocket.textContent = 'Offline';
+    statSocket.style.color = 'var(--red)';
+  });
+  socket.on('live_message', (msg) => {
+    setCollecting(true);
+    appendMessage(msg, false);
+  });
+  socket.on('submission_update', () => {
+    loadStatus();
+    showToast('New submission recorded');
+  });
 
-fetchStatus();
-setInterval(fetchStatus, 5000);
+  // ── controls ────────────────────────────────
+  $('btn-trigger').addEventListener('click', async (e) => {
+    e.target.disabled = true;
+    e.target.textContent = 'Sending…';
+    try{
+      await fetch('/api/trigger', { method:'POST' });
+      showToast('Report request sent to group');
+      setTimeout(loadStatus, 800);
+    } catch(err){
+      showToast('Failed to trigger request');
+    } finally {
+      e.target.disabled = false;
+      e.target.textContent = '▶ Trigger report request now';
+    }
+  });
+
+  $('btn-schedule').addEventListener('click', async () => {
+    const cronVal = cronInput.value.trim();
+    if(!cronVal){ showToast('Enter a cron expression first'); return; }
+    try{
+      await fetch('/api/schedule', {
+        method:'POST',
+        headers:{ 'Content-Type':'application/json' },
+        body: JSON.stringify({ cron: cronVal })
+      });
+      showToast('Schedule updated');
+      loadStatus();
+    } catch(err){
+      showToast('Failed to update schedule');
+    }
+  });
+
+  $('btn-close').addEventListener('click', async () => {
+    if(!confirm('Close the current collection window? Late submissions will stop being tracked.')) return;
+    try{
+      await fetch('/api/close-collection', { method:'POST' });
+      showToast('Collection window closed');
+      loadStatus();
+    } catch(err){
+      showToast('Failed to close collection');
+    }
+  });
+
+  // ── init ─────────────────────────────────────
+  loadStatus();
+  setInterval(loadStatus, 20000);
+})();
 </script>
+
 </body>
-</html> 
+</html>
